@@ -11,7 +11,7 @@ class CommandsClient extends Client {
       argsSplitter: str => str.split(/ +/),
       ignoreBots: true,
       ignoreSelf: true,
-      defaultCommandOptions: {}
+      defaultCommandOptions: {},
     }, commandOptions);
     
     this.commands = {};
@@ -41,6 +41,14 @@ class CommandsClient extends Client {
     });
   }
   
+  get prefix() {
+    return this.commandOptions.prefix;
+  }
+
+  get util() {
+    return require('../util/util');
+  }
+
   checkPrefix(message) {
     let prefixes = this.commandOptions.prefix;
     
@@ -102,6 +110,10 @@ class CommandsClient extends Client {
       throw new Error(`Invalid format "${prefix}"`);
     });
     return prefixes.length > 1 ? prefixes : prefixes[0];
+  }
+
+  toString() {
+    return `[CommandsClient: ${this.user.username}]`;
   }
 }
 

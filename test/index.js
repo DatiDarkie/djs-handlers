@@ -1,5 +1,5 @@
 const path = require('node:path');
-const { CommandsClient } = require('../src/index');
+const { CommandsClient, util } = require('../src/index');
 const clientOptions = {
   intents: ['Guilds', 'GuildMessages', 'DirectMessages', 'MessageContent'],
   allowedMentions: {
@@ -38,4 +38,4 @@ for (let commandFileName of fs.readdirSync(path.join(__dirname, 'commands'))) {
   client.registerCommand(pull);
 }
 
-client.login(process.env.TOKEN);
+// client.login(process.env.TOKEN);
