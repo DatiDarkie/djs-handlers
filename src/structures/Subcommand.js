@@ -19,8 +19,10 @@ class Subcommand {
     if (this.generator)
       this.generator(message, args);
   }
-}
 
-console.log(new Subcommand('hello'));
+  toString() {
+    return `[Subcommand: ${this.label}]`;
+  }
+}
 
 module.exports = Subcommand;

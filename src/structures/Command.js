@@ -7,25 +7,47 @@ class Command {
     if (label.includes(' ') || label === '')
       throw new Error(`command label must not be empty and contain no spaces!`);
 
+    // * Command Options
     this.label = label;
     this.caseInsensitive = !!options.caseInsensitive;
     this.guildOnly = !!options.guildOnly;
     this.dmOnly = !!options.dmOnly;
+    this.disabled = !!options.disabled;
+    this.argsRequired = !!options.argsRequired;
+    this.aliases = options.aliases || [];
     this.subcommands = {};
     this.requirements = options.requirements || {};
+    this.disabledReply = options.disabledReply || false;
+    this.invalidUsageReply = options.invalidUsageReply || false;
+    this.cooldownReply = options.cooldownReply || false;
 
+    // * Cooldowns
+    this.cooldown = (options.cooldown || 0) * 1000;
+    this.cooldownExclusions = options.cooldownExclusions || {};
+    if (!this.cooldownExclusions.userIDs)
+      this.cooldownExclusions.userIDs = [];
+
+    if (!this.cooldownExclusions.guildIDs)
+      this.cooldownExclusions.guildIDs = [];
+
+    if (!this.cooldownExclusions.channelIDs)
+      this.cooldownExclusions.channelIDs = [];
+
+    this.usersOnCooldown = {};
+    this.cooldownAmounts = {};
+    this.cooldownReturns = options.cooldownReturns || 1;
+    
+    // * Requirements
+    this.requirements = {};
     if (options.requirements) {
-      if (options.requirements.custom) this.requirements.custom = options.requirements.custom;
-      if (options.requirements.userIDs) this.requirements.userIDs = options.requirements.userIDs;
-      if (options.requirements.roleIDs) this.requirements.roleIDs = options.requirements.roleIDs;
-      if (options.requirements.channelIDs) this.requirements.channelIDs = options.requirements.channelIDs;
-      if (options.requirements.roleNames) this.requirements.roleNames = options.requirements.roleNames;
+      Object.assign(this.requirements, options.requirements);
     }
 
+    // Initialize Options
     if (this.caseInsensitive)
       this.label = this.label.toLowerCase();
     
-    for (let [subcommandLabel, subcommandOptions] of (options.subcommands || {}))
+    for (let [subcommandLabel, subcommandOptions] of Object.entries(options.subcommands || {}))
       this.registerSubcommand(subcommandLabel, subcommandOptions);
 
     this.generator = options.execute ?? false;
@@ -35,13 +57,67 @@ class Command {
     return this.label;
   }
 
-  executeCommand(message, args) {
-    if (this.permissionsCheck(message)) {
-      let subcommand = this.resolveSubcommand(args[0]);
-      if (subcommand) {
-        return subcommand.executeSubcommand(message, args.slice(1));
+  cooldownCheck(message) {
+    if (this.cooldownExclusionCheck(message) || this.cooldown <= 0) return true;
+    
+    const userID = message.author.id;
+    
+    if (this.usersOnCooldown[userID]) {
+      this.cooldownAmounts[userID]++;
+      return false;
+    } else {
+      this.usersOnCooldown[userID] = {
+        timeout: setTimeout(() => {
+          delete this.cooldownAmounts[userID];
+          delete this.usersOnCooldown[userID];
+        }, this.cooldown),
+        startTimestamp: Date.now()
       }
-      return this.generator(message, args);
+      this.cooldownAmounts[userID] = 0;
+      return true;
+    }
+  }
+ 
+  cooldownExclusionCheck(message) {
+    return this.cooldownExclusions.channelIDs.includes(message.channel.id) || this.cooldownExclusions.userIDs.includes(message.author.id) || (message.channel.guild && this.cooldownExclusions.guildIDs.includes(message.guild.id));
+  }
+
+  async executeCommand(message, args) {
+    if (await this.permissionsCheck(message)) {
+      if (this.disabled) {
+        let disabledReply = typeof this.disabledReply === 'function' ? await this.disabledReply(message) : this.disabledReply;
+        if (disabledReply)
+          message.reply(disabledReply);
+        return false;
+      }
+  
+      if (this.cooldown > 0 && !this.cooldownCheck(message)) {
+        if (this.cooldownReply && (this.cooldownReturns && this.cooldownAmounts[message.author.id] <= this.cooldownReturns)) {
+          let cooldownReply = typeof this.cooldownReply === 'function'
+            ? this.cooldownReply(message, this.usersOnCooldown[message.author.id].startTimestamp + this.cooldown - Date.now())
+            : this.cooldownReply;
+          if (cooldownReply)
+            message.reply(cooldownReply).then(msg => setTimeout(() => msg.delete(), 3000));
+        }
+        return false;
+      }
+      
+      let subcommand = this.resolveSubcommand(args[0]);
+      if (subcommand)
+        return subcommand.executeSubcommand(message, args.slice(1));
+      
+      if (this.argsRequired && args.length < 1) {
+        let reply = typeof this.invalidUsageReply === 'function'
+          ? this.invalidUsageReply(message)
+          : this.invalidUsageReply;
+        if (reply)
+          message.reply(reply);
+        return false;
+      }
+
+      this.generator(message, args);
+
+      return true;
     }
   }
 
@@ -107,7 +183,8 @@ class Command {
   }
   
   unregisterSubcommand(label) {
-    if (!label) return false;
+    if (!label)
+      return false;
     let subcommand = this.subcommands[label];
     delete this.subcommands[label];
     return !!subcommand;
@@ -116,11 +193,15 @@ class Command {
   resolveSubcommand(label) {
     if (typeof label !== 'string') return null;
     return Object.values(this.subcommands).find(subcommand => {
-      let subcommandLabel = subcommand.name;
+      let subcommandLabel = subcommand.label;
       if (subcommand.caseInsensitive)
         subcommandLabel = subcommandLabel.toLowerCase();
       return subcommandLabel === subcommand.label;
     }) ?? null;
+  }
+
+  toString() {
+    return `[Command ${this.label}]`;
   }
 }
 
