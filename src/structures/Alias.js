@@ -10,7 +10,11 @@ class Alias {
       throw new Error(`alias name must not be empty and contain no spaces!`);
     
     this.prefix = alias.prefix ?? true;
-    this.caseInsensitive = alias.caseInsensitive ?? true;
+    this.caseInsensitive = alias.caseInsensitive ?? command.caseInsensitive;
+
+    if (this.caseInsensitive)
+      this.name = this.name.toLowerCase();
+
     this.command = command;
   }
   

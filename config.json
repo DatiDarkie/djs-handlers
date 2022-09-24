@@ -1,0 +1,21 @@
+{
+  "clientOptions": {
+    "intents": [
+      "Guilds",
+      "GuildMembers",
+      "GuildMessages",
+      "DirectMessages",
+      "MessageContent"
+    ],
+    "allowedMentions": {
+      "parse": ["users", "roles"]
+    }
+  },
+  "commandOptions": {
+    "prefix": "-",
+    "defaultCommandOptions": {
+      "guildOnly": true,
+      "caseInsensitive": false
+    }
+  }
+}

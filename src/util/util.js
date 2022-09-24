@@ -4,13 +4,7 @@ util.shortNumberExtensions = {
   'k': 1e3,
   'm': 1e6,
   'b': 1e9,
-  't': 1e12,
-  'q': 1e15,
-  's': 1e18,
-  'p': 1e21,
-  'e': 1e24,
-  'z': 1e27,
-  'y': 1e30
+  't': 1e12
 }
 
 module.exports = Object.assign(util, {
@@ -23,15 +17,17 @@ module.exports = Object.assign(util, {
   },
 
   fromShortNumber(stringNumber) {
-    var a = this.toString();
+    if (isFinite(+stringNumber)) return +stringNumber;
+    
+    var a = stringNumber.toString();
     var num = a.replace(/[^0-9.]/g, '');
-    var unit = a.replace(/[0-9.]/g, '');
+    var unit = a.replace(/[0-9.]+/g, '');
 
     if (unit in util.shortNumberExtensions) {
       num = Number(num) * util.shortNumberExtensions[unit];
     }
     
-    return num;
+    return num || false; 
   },
 
   toShortNumber(value) {

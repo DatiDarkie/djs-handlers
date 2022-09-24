@@ -46,7 +46,12 @@ class CommandsClient extends Client {
   }
 
   get util() {
-    return require('../util/util');
+    try {
+      let util = require('../util/util');
+      return util ? util : {};
+    } catch {
+      return {};
+    }
   }
 
   checkPrefix(message) {
@@ -62,8 +67,8 @@ class CommandsClient extends Client {
   resolveCommand(commandLabel, providedPrefix = true) {
     for (let command of [...Object.values(this.commands), ...this.commandsAliases]) {
       let cmdLabel = command.label || command.name;
-      if (this.caseInsensitive)
-        cmdLabel = cmdLabel.toLowerCase();
+      if (command.caseInsensitive)
+        commandLabel = commandLabel.toLowerCase();
       if (cmdLabel === commandLabel && providedPrefix == (command.prefix ?? true)) {
         if ('command' in command)
           return command['command'];
@@ -89,6 +94,7 @@ class CommandsClient extends Client {
     let command = this.resolveCommand(commandLabel);
     if (!command)
       throw new Error(`There is no command registered for name ${commandLabel}`);
+    aliasOptions = typeof aliasOptions === 'string' ? { name: aliasOptions } : aliasOptions;
     let alias = new Alias(aliasOptions, command);
     if (this.resolveCommand(alias.name, !!alias.prefix))
       throw new Error(`There is another command/alias registered for name ${alias.name}`);
