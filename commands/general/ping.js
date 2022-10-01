@@ -5,11 +5,10 @@ module.exports = {
   aliases: ['pong', 'speed'],
   description: 'Display speed of the bot.',
   execute(message) {
-    message.reply({ embeds: [
-      new EmbedBuilder()
-      .setColor(0x00ff68)
-      .setDescription(`💓 Heart Beat: ${Math.abs(Date.now() - message.createdTimestamp)}ms\n📊 Discord API: ${message.client.ws.ping} ms`)
-      .setTimestamp(),
-    ]});
+    let now = Date.now();
+    
+    message.reply(`Pong!`).then(msg => {
+      msg.edit(`${msg.content} Latency ${Date.now() - now} ms`);
+    });
   }
 }
