@@ -70,20 +70,19 @@ class CommandsClient extends Client {
       if (command.caseInsensitive)
         commandLabel = commandLabel.toLowerCase();
       if (cmdLabel === commandLabel && providedPrefix == (command.prefix ?? true)) {
-        if ('command' in command)
-          return command['command'];
+        if ('commandLabel' in command)
+          return this.resolveCommand(command.commandLabel);
         return command;
       }
     }
   }
   
   registerCommand(commandOptions) {
-    commandOptions = Object.assign(this.commandOptions.defaultCommandOptions, commandOptions);
+    commandOptions = Object.assign(Object.create(this.commandOptions.defaultCommandOptions), commandOptions);
     
     const command = new Command(commandOptions.name, commandOptions);
     
     if (this.resolveCommand(command.label)) throw new Error(`There is another command/alias registered for name ${command.label}`);
-    
     this.commands[command.label] = command;
     for (let alias of command.aliases) {
       this.registerCommandAlias(alias, command.label);

@@ -1,3 +1,4 @@
+const Alias = require('./Alias');
 const Subcommand = require("./Subcommand");
 
 class Command {
@@ -14,7 +15,7 @@ class Command {
     this.dmOnly = !!options.dmOnly;
     this.disabled = !!options.disabled;
     this.argsRequired = !!options.argsRequired;
-    this.aliases = options.aliases || [];
+    this.aliases = [];
     this.subcommands = {};
     this.requirements = options.requirements || {};
     this.disabledReply = options.disabledReply || false;
@@ -46,6 +47,10 @@ class Command {
     // Initialize Options
     if (this.caseInsensitive)
       this.label = this.label.toLowerCase();
+    
+    for (let alias of (options.aliases || [])) {
+      this.aliases.push(new Alias(alias, this));
+    }
     
     for (let [subcommandLabel, subcommandOptions] of Object.entries(options.subcommands || {}))
       this.registerSubcommand(subcommandLabel, subcommandOptions);
@@ -102,9 +107,10 @@ class Command {
         return false;
       }
       
-      let subcommand = this.resolveSubcommand(args[0]);
-      if (subcommand)
-        return subcommand.executeSubcommand(message, args.slice(1));
+      if (args.length > 0) {
+        let subcommand = this.resolveSubcommand(args[0]);
+        if (subcommand) return subcommand.executeSubcommand(message, args.slice(1));
+      }
       
       if (this.argsRequired && args.length < 1) {
         let reply = typeof this.invalidUsageReply === 'function'
@@ -182,7 +188,7 @@ class Command {
     }), this);
   }
   
-  unregisterSubcommand(label) {
+  unregisterSubcommand(label) { 
     if (!label)
       return false;
     let subcommand = this.subcommands[label];
@@ -193,7 +199,7 @@ class Command {
   resolveSubcommand(label) {
     if (typeof label !== 'string') return null;
     return Object.values(this.subcommands).find(subcommand => {
-      let subcommandLabel = subcommand.label;
+      let subcommandLabel = label;
       if (subcommand.caseInsensitive)
         subcommandLabel = subcommandLabel.toLowerCase();
       return subcommandLabel === subcommand.label;

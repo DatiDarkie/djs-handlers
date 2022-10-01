@@ -15,7 +15,7 @@ class Alias {
     if (this.caseInsensitive)
       this.name = this.name.toLowerCase();
 
-    this.command = command;
+    this.commandLabel = command.label;
   }
   
   toString(prefix) {
