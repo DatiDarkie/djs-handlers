@@ -1,39 +1,38 @@
-const util = require('util');
+class Util {
+  /**
+   * @param {number} timeout 
+   * @returns {Promise<undefined>}
+   */
+  static async sleep (timeout) {
+    if (!Number.isInteger(timeout)) timeout = 0;
+    return new Promise(resolve => setTimeout(() => resolve(), timeout));
+  }
 
-util.shortNumberExtensions = {
-  'k': 1e3,
-  'm': 1e6,
-  'b': 1e9,
-  't': 1e12
+  /**
+   * @param {Date | number} startDate 
+   * @param {Date | number} endDate 
+   * @returns {number}
+   */
+  static calculateTimeout (startDate, endDate) {
+    startDate = +new Date(startDate);
+    endDate = +new Date(endDate);
+    return startDate && endDate && (endDate > startDate) ? (endDate - startDate) : 0;
+  }
+  
+  /**
+   * @param {*} value 
+   * @param {Intl.NumberFormatOptions} options 
+   * @returns 
+   */
+  static numberFormat(value, options) {
+    options = Object.assign({
+      maximumFractionDigits: 2,
+      notation: 'compact'
+    }, options);
+    let number = Number(value);
+    if (number !== 0 && (!number || value === '')) return null;
+    return Intl.NumberFormat(options.language || 'en-UK', options).format(number);
+  }
 }
 
-module.exports = Object.assign(util, {
-  awaiter(callbackfn, initialValue = 0) {
-    return new Promise((resolve, reject) => {
-      let stop = (lastValue, rejected = false) => rejected ? reject(lastValue) : resolve(lastValue);
-      let next = (currentValue) => callbackfn([next, stop], currentValue);
-      next(initialValue);
-    });
-  },
-
-  fromShortNumber(stringNumber) {
-    if (isFinite(+stringNumber)) return +stringNumber;
-    
-    var a = stringNumber.toString();
-    var num = a.replace(/[^0-9.]/g, '');
-    var unit = a.replace(/[0-9.]+/g, '');
-
-    if (unit in util.shortNumberExtensions) {
-      num = Number(num) * util.shortNumberExtensions[unit];
-    }
-    
-    return num || false; 
-  },
-
-  toShortNumber(value) {
-    return Intl.NumberFormat('en-US', {
-      notation: 'compact',
-      maximumFractionDigits: 1
-    }).format(value);
-  }
-});
+module.exports = Util;
